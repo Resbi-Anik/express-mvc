@@ -1,4 +1,6 @@
 const express = require("express");
+const bodyparser = require("body-parser");
+const mysql = require("mysql");
 
 const app = express();
 
@@ -6,52 +8,85 @@ const port = 3000;
 
 app.use(express.json());
 
-let courses = [
-  { id: 1, name: "course1" },
-  { id: 2, name: "course2" },
-  { id: 3, name: "course3" },
-];
+app.use(bodyparser.json(), bodyparser.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
-  res.send("hello world");
-});
+var connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'mvc_api'
+})
 
-app.get("/api/courses", (req, res) => {
-  res.send(courses);
-});
-
-app.get("/api/courses/:id", (req, res) => {
-  let courseResult = courses.find((obj) => obj.id === parseInt(req.params.id));
-
-  if (!courseResult) {
-    res.status(404).send("not found");
-  } else {
-    res.send(courseResult);
+connection.connect((err)=>{
+  if(!err){
+    console.log('connection successful');
+  }
+  else{
+    throw err;
   }
 });
 
-app.post("/api/courses", (req, res) => {
-  let postCourseResult = {
-    id: 4,
-    name: req.body.name,
-  };
-  courses.push(postCourseResult);
+app.get("/user",(req,res)=>{
+  connection.query("SELECT * FROM user",(err,result)=>{
+    if(!err){
+      res.send(result);
+    }
+    else{
+      res.status(404).send('not found')
+    }
+  })
+})
 
-  if (postCourseResult) {
-    res.send("success");
-  }
-});
+app.get("/user/:id",(req,res)=>{
+  connection.query("SELECT * FROM user WHERE id=?",[req.params.id],(err,result)=>{
+    if(!err){
+      res.send(result);
+    }
+    else{
+      res.status(404).send('not found')
+    }
+  })
+})
 
-app.put("/api/courses/:id", (req, res) => {
-  let searchUpdateCourse = courses.find(
-    (obj) => obj.id === parseInt(req.params.id)
+app.post("/user", (req, res) => {
+  connection.query(
+    "INSERT INTO user (name,id) VALUES (? , ?)",
+    [req.body.name, req.body.id],
+    (err, result) => {
+      if (!err) {
+        res.send(result);
+      } else {
+        res.status(402).send("not inserted");
+      }
+    }
   );
-  searchUpdateCourse.name = req.body.name;
 });
 
-app.delete("/api/courses/:id", (req, res) => {
-  let removeCourse = courses.filter(
-    (obj) => obj.id !== parseInt(req.params.id)
+app.put("/user/:id", (req, res) => {
+  connection.query(
+    "UPDATE user SET name=? WHERE id=?",
+    [req.body.name, req.params.id],
+    (err, result) => {
+      if (!err) {
+        res.send(result);
+      } else {
+        res.status(402).send("not inserted");
+      }
+    }
+  );
+});
+
+app.delete("/user/:id", (req, res) => {
+  connection.query(
+    "DELETE FROM user WHERE id=?",
+    [req.params.id],
+    (err, result) => {
+      if (!err) {
+        res.send(result);
+      } else {
+        res.status(402).send("delete successfully");
+      }
+    }
   );
   courses = removeCourse;
 });
